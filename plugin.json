@@ -1,11 +1,11 @@
 {
-  "name": "Example Plugin",
-  "author": "John Doe",
-  "flags": ["debug", "_root"],
+  "name": "Restart to Windows",
+  "author": "Nilesh Chakraborty",
+  "flags": [],
   "api_version": 1,
   "publish": {
-    "tags": ["template", "root"],
-    "description": "Decky example plugin.",
-    "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
+    "tags": ["utility"],
+    "description": "Restart once into Windows on a configured dual-boot system.",
+    "image": "https://opengraph.githubassets.com/1/nileshchakraborty/restart-to-windows"
   }
 }

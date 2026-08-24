@@ -1,115 +1,149 @@
+import { useEffect, useState } from "react";
+import { FaWindows } from "react-icons/fa";
+
+import { callable, definePlugin, toaster } from "@decky/api";
 import {
   ButtonItem,
+  ConfirmModal,
+  Field,
   PanelSection,
   PanelSectionRow,
-  Navigation,
-  staticClasses
+  showModal,
+  staticClasses,
+  SteamSpinner,
 } from "@decky/ui";
-import {
-  addEventListener,
-  removeEventListener,
-  callable,
-  definePlugin,
-  toaster,
-  // routerHook
-} from "@decky/api"
-import { useState } from "react";
-import { FaShip } from "react-icons/fa";
 
-// import logo from "../assets/logo.png";
-
-// This function calls the python function "add", which takes in two numbers and returns their sum (as a number)
-// Note the type annotations:
-//  the first one: [first: number, second: number] is for the arguments
-//  the second one: number is for the return value
-const add = callable<[first: number, second: number], number>("add");
-
-// This function calls the python function "start_timer", which takes in no arguments and returns nothing.
-// It starts a (python) timer which eventually emits the event 'timer_event'
-const startTimer = callable<[], void>("start_timer");
-
-function Content() {
-  const [result, setResult] = useState<number | undefined>();
-
-  const onClick = async () => {
-    const result = await add(Math.random(), Math.random());
-    setResult(result);
-  };
-
-  return (
-    <PanelSection title="Panel Section">
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={onClick}
-        >
-          {result ?? "Add two numbers via Python"}
-        </ButtonItem>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => startTimer()}
-        >
-          {"Start Python timer"}
-        </ButtonItem>
-      </PanelSectionRow>
-
-      {/* <PanelSectionRow>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <img src={logo} />
-        </div>
-      </PanelSectionRow> */}
-
-      {/*<PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => {
-            Navigation.Navigate("/decky-plugin-test");
-            Navigation.CloseSideMenus();
-          }}
-        >
-          Router
-        </ButtonItem>
-      </PanelSectionRow>*/}
-    </PanelSection>
-  );
+type RestartSupport = {
+  available: boolean;
+  error?: string;
 };
 
-export default definePlugin(() => {
-  console.log("Template plugin initializing, this is called once on frontend startup")
+type RestartResult = {
+  ok: boolean;
+  error?: string;
+};
 
-  // serverApi.routerHook.addRoute("/decky-plugin-test", DeckyPluginRouterTest, {
-  //   exact: true,
-  // });
+const getRestartSupport = callable<[], RestartSupport>("get_restart_support");
+const prepareRestartToWindows = callable<[], RestartResult>(
+  "prepare_restart_to_windows",
+);
 
-  // Add an event listener to the "timer_event" event from the backend
-  const listener = addEventListener<[
-    test1: string,
-    test2: boolean,
-    test3: number
-  ]>("timer_event", (test1, test2, test3) => {
-    console.log("Template got timer_event with:", test1, test2, test3)
-    toaster.toast({
-      title: "template got timer_event",
-      body: `${test1}, ${test2}, ${test3}`
-    });
-  });
+function Content() {
+  const [support, setSupport] = useState<RestartSupport | null>(null);
+  const [isRestarting, setIsRestarting] = useState(false);
 
-  return {
-    // The name shown in various decky menus
-    name: "Test Plugin",
-    // The element displayed at the top of your plugin's menu
-    titleView: <div className={staticClasses.Title}>Decky Example Plugin</div>,
-    // The content of your plugin's menu
-    content: <Content />,
-    // The icon displayed in the plugin list
-    icon: <FaShip />,
-    // The function triggered when your plugin unloads
-    onDismount() {
-      console.log("Unloading")
-      removeEventListener("timer_event", listener);
-      // serverApi.routerHook.removeRoute("/decky-plugin-test");
-    },
+  useEffect(() => {
+    let mounted = true;
+
+    getRestartSupport()
+      .then((result) => {
+        if (mounted) setSupport(result);
+      })
+      .catch((error) => {
+        if (mounted) {
+          setSupport({
+            available: false,
+            error: error instanceof Error ? error.message : "Support check failed.",
+          });
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const restart = async () => {
+    setIsRestarting(true);
+
+    try {
+      const result = await prepareRestartToWindows();
+      if (!result.ok) {
+        toaster.toast({
+          title: "Could not restart to Windows",
+          body: result.error ?? "An unknown error occurred.",
+          critical: true,
+          duration: 8000,
+        });
+        return;
+      }
+
+      if (typeof SteamClient?.System?.RestartPC !== "function") {
+        toaster.toast({
+          title: "Windows is ready for the next boot",
+          body: "Steam could not restart the device. Use Power → Restart to continue.",
+          critical: true,
+          duration: 10000,
+        });
+        return;
+      }
+
+      SteamClient.System.RestartPC();
+    } catch (error) {
+      toaster.toast({
+        title: "Could not restart to Windows",
+        body: error instanceof Error ? error.message : "An unknown error occurred.",
+        critical: true,
+        duration: 8000,
+      });
+    } finally {
+      setIsRestarting(false);
+    }
   };
-});
+
+  const confirmRestart = () => {
+    showModal(
+      <ConfirmModal
+        strTitle="Restart to Windows?"
+        strDescription="This uses Windows for the next boot only. Your normal boot order will not be changed."
+        strOKButtonText="Restart"
+        strCancelButtonText="Cancel"
+        bDestructiveWarning
+        onOK={() => void restart()}
+      />,
+    );
+  };
+
+  if (support === null) {
+    return (
+      <PanelSection>
+        <PanelSectionRow>
+          <SteamSpinner />
+        </PanelSectionRow>
+      </PanelSection>
+    );
+  }
+
+  if (!support.available) {
+    return (
+      <PanelSection title="Unavailable">
+        <PanelSectionRow>
+          <Field>{support.error ?? "Restart to Windows is not configured."}</Field>
+        </PanelSectionRow>
+      </PanelSection>
+    );
+  }
+
+  return (
+    <PanelSection>
+      <PanelSectionRow>
+        <ButtonItem
+          layout="below"
+          label="Restart to Windows"
+          description="Use Windows for the next boot, then return to the normal boot order."
+          disabled={isRestarting}
+          onClick={confirmRestart}
+        >
+          {isRestarting ? "Restarting..." : "Restart"}
+        </ButtonItem>
+      </PanelSectionRow>
+    </PanelSection>
+  );
+}
+
+export default definePlugin(() => ({
+  name: "Restart to Windows",
+  titleView: <div className={staticClasses.Title}>Restart to Windows</div>,
+  content: <Content />,
+  icon: <FaWindows />,
+}));
