@@ -4,6 +4,7 @@ A focused [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) plug
 
 The plugin delegates the boot arming step entirely to Bazzite's trusted `boot-windows` helper. It reads back the EFI `BootNext` entry before invoking Steam's native `RestartPC()` API — so the restart only proceeds when Windows is verifiably the next boot target. No root privileges are requested from Decky; the narrowly-scoped `efibootmgr` sudo rule installed by Bazzite's setup command is sufficient.
 
+Complement app can be installed on windows for login to bazzite: https://github.com/nileshchakraborty/windows-dualboot-setup/
 ---
 
 ## System prerequisites
