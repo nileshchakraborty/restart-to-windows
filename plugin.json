@@ -5,7 +5,7 @@
   "api_version": 1,
   "publish": {
     "tags": ["utility"],
-    "description": "Restart once into Windows on a configured dual-boot system.",
+    "description": "Restart once into Windows from the Steam Quick Access Menu on Bazzite dual-boot systems.",
     "image": "https://opengraph.githubassets.com/1/nileshchakraborty/restart-to-windows"
   }
 }

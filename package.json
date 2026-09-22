@@ -1,7 +1,7 @@
 {
   "name": "restart-to-windows",
   "version": "0.1.0",
-  "description": "A focused Decky action for restarting once into Windows.",
+  "description": "Decky Loader plugin for 1-click restart into Windows on Bazzite dual-boot handhelds.",
   "type": "module",
   "scripts": {
     "build": "rollup -c",

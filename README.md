@@ -1,10 +1,25 @@
 # Restart to Windows
 
-A focused [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) plugin that adds a single **Restart to Windows** action to the Steam Quick Access Menu (QAM) on Bazzite dual-boot systems.
+> **One-click switching from Bazzite / SteamOS into Windows for dual-boot gaming handhelds.**
+> A focused [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) plugin that adds a single **Restart to Windows** action to the Steam Quick Access Menu (QAM).
+>
+> **Companion Project:** Use [`windows-dualboot-setup`](https://github.com/nileshchakraborty/windows-dualboot-setup) on Windows for the return path (`RestartToBazzite.exe` for Armoury Crate, Xbox, and Winhance + sticky Windows UEFI boot).
 
 The plugin delegates the boot arming step entirely to Bazzite's trusted `boot-windows` helper. It reads back the EFI `BootNext` entry before invoking Steam's native `RestartPC()` API — so the restart only proceeds when Windows is verifiably the next boot target. No root privileges are requested from Decky; the narrowly-scoped `efibootmgr` sudo rule installed by Bazzite's setup command is sufficient.
 
-Complement app can be installed on windows for login to bazzite: https://github.com/nileshchakraborty/windows-dualboot-setup/
+---
+
+## Two-Way Dual-Boot Ecosystem
+
+This plugin provides the Bazzite-side interface of a complete two-way dual-boot solution for handheld gaming devices (ROG Ally, ROG Ally X, Lenovo Legion Go, Steam Deck):
+
+| Direction | Where to Trigger | Mechanism | Project / Repository |
+|---|---|---|---|
+| **Bazzite → Windows** | Steam Quick Access Menu (QAM) | Sets EFI `BootNext` to Windows Boot Manager via `boot-windows` + native Steam `RestartPC()` | [`restart-to-windows`](https://github.com/nileshchakraborty/restart-to-windows) |
+| **Windows → Bazzite** | ASUS Armoury Crate SE, Xbox App, Winhance, or Desktop shortcut | Arms one-time UEFI `bootsequence` via `RestartToBazzite.exe` + `shutdown /r /t 0` | [`windows-dualboot-setup`](https://github.com/nileshchakraborty/windows-dualboot-setup) |
+
+On Windows, the `StickyWindowsBoot` task maintains Windows Boot Manager as the persistent UEFI default, ensuring that sleep, wake, or regular restarts in Windows never boot into Bazzite unexpectedly.
+
 ---
 
 ## System prerequisites
